@@ -52,5 +52,8 @@
   "bin": {
     "redis-commander": "./bin/redis-commander.js"
   },
+  "scripts": {
+    "start": "node bin/redis-commander.js -p 8080"
+  },
   "preferGlobal": true
 }

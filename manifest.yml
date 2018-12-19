@@ -1,0 +1,10 @@
+---
+applications:
+- name: redis-explorer
+  memory: 512M
+  instances: 1
+  random-route: true
+  env:
+    useTLS: true  
+  services:
+   - redis-test4

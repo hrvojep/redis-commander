@@ -95,21 +95,21 @@ let args = optimist
     describe: 'clear configuration file.'
   })
   .options('root-pattern', {
-      alias: 'rp',
-      boolean: false,
-      describe: 'default root pattern for redis keys.',
-      default: '*'
+    alias: 'rp',
+    boolean: false,
+    describe: 'default root pattern for redis keys.',
+    default: '*'
   })
   .options('use-scan', {
-      alias: 'sc',
-      boolean: true,
-      default: false,
-      describe: 'Use SCAN instead of KEYS.'
+    alias: 'sc',
+    boolean: true,
+    default: false,
+    describe: 'Use SCAN instead of KEYS.'
   })
   .options('scan-count', {
-      boolean: false,
-      default: 100,
-      describe: 'The size of each seperate scan.'
+    boolean: false,
+    default: 100,
+    describe: 'The size of each seperate scan.'
   })
   .options('no-log-data', {
     // through no-  this is a negated param, if set args[log-data]=true
@@ -123,20 +123,20 @@ let args = optimist
     boolean: true,
     default: false,
     describe: 'Open web-browser with Redis-Commander.'
-})
+  })
   .options('folding-char', {
     alias: 'fc',
     boolean: false,
     describe: 'Character to fold keys at for tree view.',
     default: ':'
   })
-  .check(function(value) {
-      switch (value['folding-char']) {
-        case '&':
-        case '?':
-        case '*':
-          throw new Error('Characters &, ? and * are invalid for param folding-char!');
-      }
+  .check(function (value) {
+    switch (value['folding-char']) {
+      case '&':
+      case '?':
+      case '*':
+        throw new Error('Characters &, ? and * are invalid for param folding-char!');
+    }
   })
   .argv;
 
@@ -148,15 +148,15 @@ if (args.help) {
 if (args['use-scan']) {
   console.log('Using scan instead of keys');
   Object.defineProperty(Redis.prototype, 'keys', {
-    value: function(pattern, cb) {
+    value: function (pattern, cb) {
       let keys = [];
       let that = this;
-      let scanCB = function(err, res) {
+      let scanCB = function (err, res) {
         if (err) {
           cb(err);
         } else {
           let count = res[0], curKeys = res[1];
-	      console.log("scanning: " + count + ": " + curKeys.length);
+          console.log("scanning: " + count + ": " + curKeys.length);
           keys = keys.concat(curKeys);
           if (Number(count) === 0) {
             cb(null, keys);
@@ -170,8 +170,8 @@ if (args['use-scan']) {
   });
 }
 
-if(args['clear-config']) {
-  myUtils.deleteConfig(function(err) {
+if (args['clear-config']) {
+  myUtils.deleteConfig(function (err) {
     if (err) {
       console.log("Failed to delete existing config file.");
     }
@@ -194,7 +194,7 @@ myUtils.getConfig(function (err, config) {
     }
     let db = parseInt(args['redis-db']);
     if (isNaN(db)) {
-        db = 0;
+      db = 0;
     }
 
     let client;
@@ -210,16 +210,16 @@ myUtils.getConfig(function (err, config) {
         "connectionName": "redis-commander"
       };
 
-      if (!myUtils.containsConnection(config.default_connections, newDefault)) {
+      if (!myUtils.containsConnection(config.default_connections, newDefault)) {        
         if (newDefault.sentinel_host) {
           client = new Redis({
             showFriendlyErrorStack: true,
-            sentinels: [{host: newDefault.sentinel_host, port: newDefault.sentinel_port}],
+            sentinels: [{ host: newDefault.sentinel_host, port: newDefault.sentinel_port }],
             password: newDefault.password,
             name: 'mymaster',
             connectionName: newDefault.connectionName
           });
-        } else {
+        } else {          
           client = new Redis({
             port: newDefault.port,
             host: newDefault.host,
@@ -242,10 +242,43 @@ myUtils.getConfig(function (err, config) {
         }
         setUpConnection(client, db);
       }
-    } else if (config.default_connections.length === 0) {
-      client = new Redis();
-      client.label = args['redis-label'] || "local";
+    } else if (config.default_connections.length === 0) {      
+      var cfRedis;
+      var redisHost;
+      var redisPort;
+      var redisPassword;
+      if (process.env.VCAP_SERVICES) {
+        console.log("Getting cf VCAP env variables");
+        var vcapServices = JSON.parse(process.env.VCAP_SERVICES);
+        cfRedis = vcapServices['redis'][0];
+        redisHost = cfRedis.credentials.hostname;
+        redisPort = cfRedis.credentials.port;
+        redisPassword = cfRedis.credentials.password;
+        console.log("redisHost:" + redisHost + " redisPort:" + redisPort + "redisPassword:"+redisPassword);
+        var useTLS = JSON.parse(process.env.useTLS);
 
+        if (useTLS === true){
+          client = new Redis({
+            port: redisPort,
+            host: redisHost,
+            family: 4,
+            password: redisPassword,
+            tls: {},
+            connectionName: "redis-commander"
+          });
+        } else {
+          client = new Redis({
+            port: redisPort,
+            host: redisHost,
+            family: 4,
+            password: redisPassword,            
+            connectionName: "redis-commander"
+          });
+        }
+      } else {
+        client = new Redis();
+      }
+      client.label = args['redis-label'] || "local";
       redisConnections.push(client);
       setUpConnection(client, db);
     }
@@ -254,7 +287,7 @@ myUtils.getConfig(function (err, config) {
 });
 
 
-if(args['open']) {
+if (args['open']) {
   let address = '127.0.0.1';
   if (args['address'] !== '0.0.0.0' && args['address'] !== '::') {
     address = args['address'];
@@ -263,15 +296,15 @@ if(args['open']) {
 }
 
 
-function startDefaultConnections (connections, callback) {
+function startDefaultConnections(connections, callback) {
   if (connections) {
-    connections.forEach(function (connection) {
-      if (!myUtils.containsConnection(redisConnections.map(function(c) {return c.options}), connection)) {
+    connections.forEach(function (connection) {    
+      if (!myUtils.containsConnection(redisConnections.map(function (c) { return c.options }), connection)) {
         let client = new Redis({
-          port: connection.port,
-          host: connection.host,
+          port: redisPort,
+          host: redisHost,
           family: 4,
-          password: connection.password,
+          password: redisPassword,
           db: connection.dbIndex,
           connectionName: "redis-commander"
         });
@@ -284,7 +317,7 @@ function startDefaultConnections (connections, callback) {
   return callback(null);
 }
 
-function setUpConnection (redisConnection, db) {
+function setUpConnection(redisConnection, db) {
   redisConnection.on("error", function (err) {
     console.error("setUpConnection Redis error", err.stack);
   });
@@ -294,19 +327,19 @@ function setUpConnection (redisConnection, db) {
   redisConnection.once("connect", connectToDB.bind(this, redisConnection, db));
 }
 
-function connectToDB (redisConnection, db) {
+function connectToDB(redisConnection, db) {
   redisConnection.select(db, function (err) {
     if (err) {
       console.log(err);
       process.exit();
     }
-    console.log("Redis Connection " + redisConnection.options.host + ":" + redisConnection.options.port + " Using Redis DB #" + redisConnection.options.db);
+    console.log("Redis Connection" + redisConnection.options.host + ":" + redisConnection.options.port + " Using Redis DB #" + redisConnection.options.db);
   });
 }
 
-function startWebApp () {
+function startWebApp() {
   let urlPrefix = args['url-prefix'];
-  let httpServerOptions = {username: args["http-auth-username"], password: args["http-auth-password"], passwordHash: args["http-auth-password-hash"], urlPrefix };
+  let httpServerOptions = { username: args["http-auth-username"], password: args["http-auth-password"], passwordHash: args["http-auth-password-hash"], urlPrefix };
   if (args['save']) {
     args['nosave'] = false;
   }
@@ -318,12 +351,12 @@ function startWebApp () {
   let appOptions = {
     noSave: args["nosave"],
     rootPattern: args['root-pattern'],
-    noLogData: (args['log-data']===false),
+    noLogData: (args['log-data'] === false),
     foldingChar: args['folding-char']
   };
   let appInstance = app(httpServerOptions, redisConnections, appOptions);
 
-  appInstance.listen(args.port, args.address, function() {
+  appInstance.listen(args.port, args.address, function () {
     console.log("listening on ", args.address, ":", args.port);
     if (urlPrefix) {
       console.log(`using url prefix ${urlPrefix}/`);
