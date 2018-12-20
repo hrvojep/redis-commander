@@ -1,6 +1,8 @@
 # Redis Commander
 
-Redis management tool written in node.js
+Redis management tool written in node.js.
+Used for running redis-commander on cloud foundry when connecting to redis (which is configered via Service broker). Check manifest.yml if you want to connect to Redis via TLS
+or not.
 
 # Install and Run
 
